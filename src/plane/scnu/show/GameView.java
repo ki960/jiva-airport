@@ -3,31 +3,35 @@ package plane.scnu.show;
 import plane.scnu.controller.GameController;
 import plane.scnu.element.FlyingObject;
 import plane.scnu.manager.ResourceManager;
-
 import javax.swing.*;
 import java.awt.*;
+import java.awt.geom.AffineTransform;
+import java.util.ArrayList;
+import java.util.List;
 
 public class GameView extends JPanel {
     private final GameController controller;
     public static final int SCREEN_WIDTH = 1280;
     public static final int SCREEN_HEIGHT = 720;
-
-    // 新的左下角UI布局常量
     private static final int UI_CORNER_X = 20;
     private static final int UI_CORNER_Y = SCREEN_HEIGHT - 160;
-    // 生命和积分位置
     private static final int LIFE_X = UI_CORNER_X;
-    private static final int LIFE_Y = UI_CORNER_Y + 70;  // 生命在积分下方
+    private static final int LIFE_Y = UI_CORNER_Y + 70;
     private static final int VALUE_OFFSET_X = 85;
-
-    // 积分在生命下方
     private static final int SCORE_X = UI_CORNER_X;
     private static final int SCORE_Y = UI_CORNER_Y;
-    // 技能位置（稍向右移）
-    private static final int SKILL_X = UI_CORNER_X + 170; // 向右移动220像素
+    private static final int SKILL_X = UI_CORNER_X + 170;
     private static final int SKILL_Y = UI_CORNER_Y;
-    private static final int SKILL_SPACING = 120; // 技能间距
-    private static final int TEXT_OFFSET_Y = 140; // 技能文本Y偏移
+    private static final int SKILL_SPACING = 120;
+    private static final int TEXT_OFFSET_Y = 140;
+
+    private int animationCounter = 0;
+    private int scoreAnimation = 0;
+    private int lastScore = 0;
+    private int lifeAnimation = 0;
+    private int lastLife = 0;
+    private int skill1Animation = 0;
+    private int skill2Animation = 0;
 
     public GameView(GameController controller) {
         this.controller = controller;
@@ -36,126 +40,157 @@ public class GameView extends JPanel {
     }
 
     private String getRomanLife(int life) {
-        // 限制最大值为10
         life = Math.min(life, 10);
-
-        // 转换为罗马数字
-        switch(life) {
-            case 0: return "-";
-            case 1: return "I";
-            case 2: return "II";
-            case 3: return "III";
-            case 4: return "IV";
-            case 5: return "V";
-            case 6: return "VI";
-            case 7: return "VII";
-            case 8: return "VIII";
-            case 9: return "IX";
-            case 10: return "X";
-            default: return String.valueOf(life);
-        }
+        return switch (life) {
+            case 0 -> "-";
+            case 1 -> "I";
+            case 2 -> "II";
+            case 3 -> "III";
+            case 4 -> "IV";
+            case 5 -> "V";
+            case 6 -> "VI";
+            case 7 -> "VII";
+            case 8 -> "VIII";
+            case 9 -> "IX";
+            case 10 -> "X";
+            default -> String.valueOf(life);
+        };
     }
 
     @Override
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
-
-        // 绘制背景
         controller.getBackground().painting(g);
-
-        // 绘制所有游戏实体
         drawGameEntities(g);
-
-        // 绘制UI元素
         drawUI(g);
-
-        // 绘制游戏状态图片
         drawGameState(g);
+        animationCounter++;
     }
 
     private void drawGameEntities(Graphics g) {
-        // 绘制英雄机
+        List<FlyingObject> enemiesCopy = new ArrayList<>(controller.getEnemies());
+        List<FlyingObject> bulletsCopy = new ArrayList<>(controller.getBullets());
         controller.getHero().painting(g);
-
-        // 绘制敌机
-        for (FlyingObject enemy : controller.getEnemies()) {
-            enemy.painting(g);
-        }
-
-        // 绘制子弹
-        for (FlyingObject bullet : controller.getBullets()) {
-            bullet.painting(g);
-        }
+        for (FlyingObject enemy : enemiesCopy) enemy.painting(g);
+        for (FlyingObject bullet : bulletsCopy) bullet.painting(g);
     }
 
     private void drawUI(Graphics g) {
-        // 生命使用大字体（28号）
-        g.setFont(new Font("Calibri", Font.BOLD, 28)); // 修改点1
-        FontMetrics lifeMetrics = g.getFontMetrics();
-        // 绘制生命（在下方）
-        ResourceManager.LIFE_ICON.paintIcon(this, g, LIFE_X, LIFE_Y);
-        int lifeIconCenterY = LIFE_Y + ResourceManager.LIFE_ICON.getIconHeight()/2;
-        int lifeTextBaseline = lifeIconCenterY + (lifeMetrics.getAscent() - lifeMetrics.getDescent())/2;
-        g.setColor(Color.WHITE);
-
-        // 使用罗马数字显示生命值
-        String romanLife = getRomanLife(controller.getLife());
-        g.drawString(" " + romanLife,
-                LIFE_X + VALUE_OFFSET_X,
-                lifeTextBaseline);
-
-        // 积分使用小字体（24号）
-        g.setFont(new Font("Calibri", Font.BOLD, 24)); // 修改点2
-        FontMetrics scoreMetrics = g.getFontMetrics();
-
-        // 绘制积分（在上方）
-        ResourceManager.SCORE_ICON.paintIcon(this, g, SCORE_X, SCORE_Y);
-        int scoreIconCenterY = SCORE_Y + ResourceManager.SCORE_ICON.getIconHeight()/2;
-        int scoreTextBaseline = scoreIconCenterY + (scoreMetrics.getAscent() - scoreMetrics.getDescent())/2;
-        g.setColor(Color.WHITE);
-        g.drawString("× " + controller.getScore(),
-                SCORE_X + 70,
-                scoreTextBaseline);
-
-        // 绘制技能UI保持不变
+        drawLifeUI(g);
+        drawScoreUI(g);
         drawSkillsUI(g);
     }
 
+    private void drawLifeUI(Graphics g) {
+        int currentLife = controller.getLife();
+        if (currentLife != lastLife) {
+            lifeAnimation = 20;
+            lastLife = currentLife;
+        }
+        int floatOffset = 0;
+        if (lifeAnimation > 0) {
+            floatOffset = (int)(5 * Math.sin(lifeAnimation * 0.3));
+            lifeAnimation--;
+        }
+        ResourceManager.LIFE_ICON.paintIcon(this, g, LIFE_X, LIFE_Y + floatOffset);
+        Graphics2D g2d = (Graphics2D) g.create();
+        g2d.setFont(new Font("Calibri", Font.BOLD, 28));
+        if (currentLife > lastLife) g2d.setColor(new Color(0, 200, 0));
+        else if (currentLife < lastLife) g2d.setColor(new Color(220, 0, 0));
+        else g2d.setColor(Color.WHITE);
+        float scale = 1.0f;
+        if (lifeAnimation > 0) scale = 1.0f + 0.1f * (lifeAnimation / 20.0f);
+        AffineTransform original = g2d.getTransform();
+        g2d.translate(LIFE_X + VALUE_OFFSET_X, LIFE_Y + 40 + floatOffset);
+        g2d.scale(scale, scale);
+        g2d.translate(-(LIFE_X + VALUE_OFFSET_X), -(LIFE_Y + 40 + floatOffset));
+        g2d.drawString(" " + getRomanLife(currentLife),
+                LIFE_X + VALUE_OFFSET_X,
+                LIFE_Y + 40 + floatOffset);
+        g2d.setTransform(original);
+        g2d.dispose();
+    }
+
+    private void drawScoreUI(Graphics g) {
+        int currentScore = controller.getScore();
+        if (currentScore != lastScore) {
+            scoreAnimation = 20;
+            lastScore = currentScore;
+        }
+        float scale = 1.0f;
+        if (scoreAnimation > 0) {
+            scale = 1.0f + 0.5f * (scoreAnimation / 20.0f);
+            scoreAnimation--;
+        }
+        ResourceManager.SCORE_ICON.paintIcon(this, g, SCORE_X, SCORE_Y);
+        int iconWidth = ResourceManager.SCORE_ICON.getIconWidth();
+        Graphics2D g2d = (Graphics2D) g.create();
+        int floatOffset = (int)(0 * Math.sin(animationCounter * 0.08));
+        Font font = new Font("Calibri", Font.BOLD, (int)(24 * scale));
+        g2d.setFont(font);
+        if (scale > 1.0f) {
+            Color startColor = new Color(255, 215, 0);
+            Color endColor = Color.WHITE;
+            int textStartX = SCORE_X + iconWidth + 5;
+            GradientPaint gp = new GradientPaint(
+                    textStartX, SCORE_Y,
+                    startColor,
+                    textStartX, SCORE_Y + 45,
+                    endColor
+            );
+            g2d.setPaint(gp);
+        } else g2d.setColor(Color.WHITE);
+        int textX = SCORE_X + iconWidth - 5;
+        g2d.drawString("× " + currentScore, textX, SCORE_Y + 47 + floatOffset);
+        g2d.dispose();
+    }
+
     private void drawSkillsUI(Graphics g) {
-        int startX = SKILL_X;
-        int startY = SKILL_Y;
-
         g.setColor(Color.WHITE);
-        g.setFont(new Font("Calibri", Font.BOLD, 20)); // 修改点3
-        // 技能1：无敌
-        ResourceManager.SKILL1_ICON.paintIcon(this, g, startX, startY);
-        String skill1Text = "Cost:" + controller.getSkill1Cost();
-        int textWidth1 = g.getFontMetrics().stringWidth(skill1Text);
-        int textX1 = startX + (ResourceManager.SKILL1_ICON.getIconWidth() - textWidth1) / 2;
-        g.drawString(skill1Text, textX1, startY + TEXT_OFFSET_Y);
+        g.setFont(new Font("Calibri", Font.BOLD, 20));
+        drawSkill(g, ResourceManager.SKILL1_ICON, controller.getSkill1Cost(), SKILL_X, 1, skill1Animation);
+        drawSkill(g, ResourceManager.SKILL2_ICON, controller.getSkill2Cost(), SKILL_X + SKILL_SPACING, 2, skill2Animation);
+        if (skill1Animation > 0) skill1Animation--;
+        if (skill2Animation > 0) skill2Animation--;
+    }
 
-        // 技能2：火力
-        ResourceManager.SKILL2_ICON.paintIcon(this, g, startX + SKILL_SPACING, startY);
-        String skill2Text = "Cost:" + controller.getSkill2Cost();
-        int textWidth2 = g.getFontMetrics().stringWidth(skill2Text);
-        int textX2 = startX + SKILL_SPACING + (ResourceManager.SKILL2_ICON.getIconWidth() - textWidth2) / 2;
-        g.drawString(skill2Text, textX2, startY + TEXT_OFFSET_Y);
+    private void drawSkill(Graphics g, ImageIcon icon, int cost, int x, int skillType, int animation) {
+        icon.paintIcon(this, g, x, SKILL_Y);
+        Graphics2D g2d = (Graphics2D) g.create();
+        String text = "Cost:" + cost;
+        int textWidth = g2d.getFontMetrics().stringWidth(text);
+        int textX = x + (icon.getIconWidth() - textWidth) / 2;
+        int textY = SKILL_Y + TEXT_OFFSET_Y;
+        AffineTransform originalTransform = g2d.getTransform();
+        float scale = 1.0f;
+        if (animation > 0) {
+            float progress = 1.0f - (animation / 20.0f);
+            scale = 1.0f + 0.5f * (float)Math.sin(progress * Math.PI);
+        }
+        g2d.translate(textX + textWidth/2, textY);
+        g2d.scale(scale, scale);
+        g2d.translate(-(textX + textWidth/2), -textY);
+        if (animation > 0) {
+            if (skillType == 1) g2d.setColor(new Color(100, 180, 255));
+            else g2d.setColor(new Color(255, 100, 100));
+        } else g2d.setColor(Color.WHITE);
+        g2d.drawString(text, textX, textY);
+        g2d.setTransform(originalTransform);
+        g2d.dispose();
     }
 
     private void drawGameState(Graphics g) {
         int centerX = (SCREEN_WIDTH - ResourceManager.START.getIconWidth()) / 2;
         int centerY = (SCREEN_HEIGHT - ResourceManager.START.getIconHeight()) / 2;
-
         switch (controller.getGameState()) {
-            case GameController.READY:
-                ResourceManager.START.paintIcon(this, g, centerX, centerY);
-                break;
-            case GameController.PAUSE:
-                ResourceManager.PAUSE.paintIcon(this, g, centerX, centerY);
-                break;
-            case GameController.GAMEOVER:
-                ResourceManager.GAMEOVER.paintIcon(this, g, centerX, centerY);
-                break;
+            case GameController.READY -> ResourceManager.START.paintIcon(this, g, centerX, centerY);
+            case GameController.PAUSE -> ResourceManager.PAUSE.paintIcon(this, g, centerX, centerY);
+            case GameController.GAMEOVER -> ResourceManager.GAMEOVER.paintIcon(this, g, centerX, centerY);
         }
+    }
+
+    public void markSkillUsed(int skillType) {
+        if (skillType == 1) skill1Animation = 20;
+        else if (skillType == 2) skill2Animation = 20;
     }
 }
