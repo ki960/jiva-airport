@@ -1,8 +1,13 @@
 package plane.scnu.element;
 
-public abstract class EnemyPlane extends FlyingObjesct {
+import plane.scnu.manager.Enemy;
+
+/**
+ * 敌机基类
+ */
+public abstract class EnemyPlane extends FlyingObject implements Enemy {
     @Override
     public void move() {
-        y+=step;
+        x -= step; // 所有敌机都向左移动
     }
 }

@@ -1,0 +1,74 @@
+package plane.scnu.manager;
+
+import javax.swing.*;
+import java.awt.*;
+import java.util.HashMap;
+import java.util.Map;
+
+public class ResourceManager {
+    // 背景和子弹资源
+    public static final ImageIcon BG = loadIcon("background.png");
+    public static final ImageIcon BULLET = loadIcon("bullet.png");
+
+    // 游戏状态图片
+    public static final ImageIcon START = loadIcon("start.png");
+    public static final ImageIcon PAUSE = loadIcon("pause.png");
+    public static final ImageIcon GAMEOVER = loadIcon("gameover.png");
+
+    // UI元素
+    public static final ImageIcon LIFE_ICON = resizeIcon(loadIcon("character_head.png"), 80, 80); // 80x80
+    public static final ImageIcon SCORE_ICON = resizeIcon(loadIcon("gold_coin.png"), 80, 80); // 50x50
+    public static final ImageIcon SKILL1_ICON = resizeIcon(loadIcon("skill1.png"), 91, 120); // 114x150
+    public static final ImageIcon SKILL2_ICON = resizeIcon(loadIcon("skill2.png"), 91, 120); // 114x150
+    // 动画资源
+    private static final Map<String, ImageIcon[]> animations = new HashMap<>();
+
+    static {
+        // 加载敌机动画
+        animations.put("airplane", new ImageIcon[]{
+                loadIcon("airplane0.png"),
+                loadIcon("airplane1.png")
+        });
+
+        animations.put("bigairplane", new ImageIcon[]{
+                loadIcon("bigairplane0.png"),
+                loadIcon("bigairplane1.png")
+        });
+
+        animations.put("bee", new ImageIcon[]{
+                loadIcon("bee0.png"),
+                loadIcon("bee1.png")
+        });
+
+        animations.put("hero", new ImageIcon[]{
+                loadIcon("hero0.png"),
+                loadIcon("hero1.png")
+        });
+
+        // 爆炸动画
+        animations.put("bom", new ImageIcon[]{
+                loadIcon("bom1.png"),
+                loadIcon("bom2.png"),
+                loadIcon("bom3.png"),
+                loadIcon("bom4.png")
+        });
+    }
+
+    // 加载单个图标
+    private static ImageIcon loadIcon(String filename) {
+        return new ImageIcon("images/" + filename);
+    }
+
+    // 调整图标大小
+    public static ImageIcon resizeIcon(ImageIcon icon, int width, int height) {
+        if (icon == null) return null;
+        Image image = icon.getImage();
+        Image resizedImage = image.getScaledInstance(width, height, Image.SCALE_SMOOTH);
+        return new ImageIcon(resizedImage);
+    }
+
+    // 获取动画序列
+    public static ImageIcon[] getAnimation(String type) {
+        return animations.getOrDefault(type, null);
+    }
+}

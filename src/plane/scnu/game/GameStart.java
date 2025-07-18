@@ -1,29 +1,28 @@
 package plane.scnu.game;
 
-import plane.scnu.controller.GameThread;
-
+import plane.scnu.controller.GameController;
 import javax.swing.*;
 
 public class GameStart {
-
     public static void main(String[] args) {
-        //1.显示画框（外层）:JFrame
-        JFrame jf = new JFrame();
+        JFrame frame = new JFrame();
+        GameController controller = new GameController();
 
-        //2.显示面板:Jpanel
-        GameThread jp =new GameThread();
+        // 设置内容面板为1280x720
+        frame.setContentPane(controller.getView());
 
-        //3.将面板放入画框中:
-        jf.add(jp);
+        frame.setResizable(false);
+        // 自动调整窗口大小以包含装饰
+        frame.pack();
 
-        //对窗口进行设置
-        jf.setTitle("我的窗口");//设置标题
-        jf.setSize(436,700); //设置窗口大小
-        jf.setLocationRelativeTo(null); //居中显示
-        jf.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE); //设置关闭窗口后自动结束程序
+        // 设置窗口位置居中
+        frame.setLocationRelativeTo(null);
 
-        //4.显示窗口
-        jf.setVisible(true);
-        jp.action();
+        // 其他设置保持不变
+        frame.setTitle("The Barents Witch");
+        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        frame.setVisible(true);
+
+        controller.start();
     }
 }
